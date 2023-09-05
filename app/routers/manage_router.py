@@ -33,13 +33,13 @@ def load_fake_data_task():
     with get_conn() as conn:
         conn.execute(
             "insert into users (email, password, is_admin) values (%s, %s, %s)",
-            ["admin@example.com", hashed, True],
+            ["admin@example.com", hashed.decode("utf8"), True],
         )
 
         for i in range(10):
             conn.execute(
                 "insert into users (email, password) values (%s, %s)",
-                [fake.email(), hashed],
+                [fake.email(), hashed.decode("utf8")],
             )
 
         for category in ["react", "fastapi", "springboot", "nextjs"]:
