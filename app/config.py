@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     db_port: str
     db_name: str
     api_key: str
+    jwt_secret: str
 
     class Config:
         env_file = ".env"
