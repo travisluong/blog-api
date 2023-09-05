@@ -62,7 +62,7 @@ def signin(sign_in_req: SignInReq, response: Response):
         if not is_password_correct:
             raise HTTPException(status_code=401, detail="incorrect credentials")
         expire = datetime.utcnow() + timedelta(minutes=15)
-        payload = {"sub": record.user_id, "exp": expire}
+        payload = {"sub": str(record.user_id), "exp": expire}
         token = jwt.encode(payload, settings.jwt_secret, algorithm="HS256")
         response.set_cookie(key="jwt", value=token)
         return {"message": "sign in success"}
