@@ -32,18 +32,30 @@ def load_fake_data_task():
     hashed = bcrypt.hashpw(password, bcrypt.gensalt())
     with get_conn() as conn:
         conn.execute(
-            "insert into users (email, password, is_admin) values (%s, %s, %s)",
-            ["admin@example.com", hashed.decode("utf8"), True],
+            "insert into users (email, username, password, is_admin) values (%s, %s, %s, %s) on conflict do nothing",
+            [
+                "admin@example.com",
+                fake.simple_profile()["username"],
+                hashed.decode("utf8"),
+                True,
+            ],
         )
 
         for i in range(10):
             conn.execute(
-                "insert into users (email, password) values (%s, %s)",
-                [fake.email(), hashed.decode("utf8")],
+                "insert into users (email, username, password) values (%s, %s, %s)",
+                [
+                    fake.email(),
+                    fake.simple_profile()["username"],
+                    hashed.decode("utf8"),
+                ],
             )
 
         for category in ["react", "fastapi", "springboot", "nextjs"]:
-            conn.execute("insert into categories (name) values (%s)", [category])
+            conn.execute(
+                "insert into categories (name) values (%s) on conflict do nothing",
+                [category],
+            )
 
         for i in range(20):
             post = {

@@ -25,3 +25,10 @@ def me(
             "select * from users where user_id = %s", [current_user_id]
         ).fetchone()
         return record
+
+
+@router.get("/")
+def get_users(conn: Connection = Depends(get_db)):
+    with conn.cursor(row_factory=class_row(UserRes)) as cur:
+        records = cur.execute("select * from users where is_admin = true").fetchall()
+        return records
