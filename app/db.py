@@ -9,3 +9,8 @@ conninfo = f"user={settings.db_user} password={settings.db_password} host={setti
 
 def get_conn():
     return psycopg.connect(conninfo=conninfo)
+
+
+def get_db():
+    with get_conn() as conn:
+        yield conn
