@@ -57,3 +57,16 @@ def update_category(
             [category_req.name, datetime.now(), category_id],
         ).fetchone()
         return record
+
+
+@router.delete("/{category_id}")
+def delete_category(conn: DBDep, is_admin: AdminDep, category_id: int):
+    with conn.cursor() as cur:
+        record = cur.execute(
+            "delete from categories where category_id = %s returning name",
+            [category_id],
+        ).fetchone()
+        if record:
+            return {"message": f"{record[0]} category deleted"}
+        else:
+            raise HTTPException(status_code=404, detail="category not found")
