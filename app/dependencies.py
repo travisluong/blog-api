@@ -27,3 +27,4 @@ def get_db():
 
 
 DBDep = Annotated[Connection, Depends(get_db)]
+AuthDep = Annotated[str, Depends(get_current_user_id)]

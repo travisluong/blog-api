@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from psycopg.rows import class_row
 
-from app.dependencies import DBDep, get_current_user_id
+from app.dependencies import AuthDep, DBDep, get_current_user_id
 
 router = APIRouter(prefix="/users")
 
@@ -16,7 +16,7 @@ class UserRes(BaseModel):
 @router.get("/me")
 def me(
     conn: DBDep,
-    current_user_id: str = Depends(get_current_user_id),
+    current_user_id: AuthDep,
 ):
     with conn.cursor(row_factory=class_row(UserRes)) as cur:
         record = cur.execute(
