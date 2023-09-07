@@ -34,9 +34,7 @@ def get_categories(conn: DBDep):
 
 
 @router.post("/")
-def create_category(
-    conn: DBDep, current_user_id: AuthDep, is_admin: AdminDep, category_req: CategoryReq
-):
+def create_category(conn: DBDep, is_admin: AdminDep, category_req: CategoryReq):
     with conn.cursor(row_factory=class_row(CategoryRes)) as cur:
         is_exists = cur.execute(
             "select * from categories where name = %s", [category_req.name]
@@ -45,5 +43,17 @@ def create_category(
             raise HTTPException(status_code=400, detail="category already exists")
         record = cur.execute(
             "insert into categories (name) values (%s) returning *", [category_req.name]
+        ).fetchone()
+        return record
+
+
+@router.put("/{category_id}")
+def update_category(
+    conn: DBDep, is_admin: AdminDep, category_id: int, category_req: CategoryReq
+):
+    with conn.cursor(row_factory=class_row(CategoryRes)) as cur:
+        record = cur.execute(
+            "update categories set name = %s, updated_at = %s where category_id = %s returning *",
+            [category_req.name, datetime.now(), category_id],
         ).fetchone()
         return record
