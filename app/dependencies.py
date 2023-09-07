@@ -1,9 +1,11 @@
 from typing import Annotated
 
-from fastapi import Cookie, HTTPException
+from fastapi import Cookie, Depends, HTTPException
 from jose import JWTError, jwt as josejwt
+from psycopg import Connection
 
 from app.config import get_settings
+from app.db import get_conn
 
 settings = get_settings()
 
@@ -17,3 +19,11 @@ def get_current_user_id(jwt: Annotated[str | None, Cookie()] = None):
     except JWTError as e:
         print(e)
         raise HTTPException(status_code=401, detail="invalid credentials")
+
+
+def get_db():
+    with get_conn() as conn:
+        yield conn
+
+
+DBDep = Annotated[Connection, Depends(get_db)]
