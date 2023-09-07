@@ -29,6 +29,7 @@ class UserDB(BaseModel):
     email: str
     username: str | None
     password: str | None
+    is_admin: bool
 
 
 @router.post("/signup")
@@ -62,7 +63,11 @@ def signin(sign_in_req: SignInReq, response: Response):
         if not is_password_correct:
             raise HTTPException(status_code=401, detail="incorrect credentials")
         expire = datetime.utcnow() + timedelta(minutes=15)
-        payload = {"sub": str(record.user_id), "exp": expire}
+        payload = {
+            "sub": str(record.user_id),
+            "exp": expire,
+            "is_admin": record.is_admin,
+        }
         token = jwt.encode(payload, settings.jwt_secret, algorithm="HS256")
         response.set_cookie(key="jwt", value=token)
         return {"message": "sign in success"}

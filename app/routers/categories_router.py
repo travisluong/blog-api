@@ -3,7 +3,7 @@ from fastapi import APIRouter, HTTPException
 from psycopg.rows import class_row
 from pydantic import BaseModel
 
-from app.dependencies import AuthDep, DBDep
+from app.dependencies import AdminDep, AuthDep, DBDep
 
 
 router = APIRouter(prefix="/categories")
@@ -34,13 +34,15 @@ def get_categories(conn: DBDep):
 
 
 @router.post("/")
-def create_category(conn: DBDep, current_user_id: AuthDep, category_req: CategoryReq):
+def create_category(
+    conn: DBDep, current_user_id: AuthDep, is_admin: AdminDep, category_req: CategoryReq
+):
     with conn.cursor(row_factory=class_row(CategoryRes)) as cur:
         is_exists = cur.execute(
             "select * from categories where name = %s", [category_req.name]
         ).fetchone()
         if is_exists:
-            return HTTPException(status_code=400, detail="category already exists")
+            raise HTTPException(status_code=400, detail="category already exists")
         record = cur.execute(
             "insert into categories (name) values (%s) returning *", [category_req.name]
         ).fetchone()
