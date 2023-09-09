@@ -37,6 +37,7 @@ def get_posts(
     jwt_payload: JwtDep,
     category: str | None = None,
     author: str | None = None,
+    sort: str | None = None,
 ):
     with (
         conn.cursor(row_factory=class_row(Category)) as categories_cur,
@@ -71,6 +72,15 @@ def get_posts(
             else:
                 sql += " and user_id = %(user_id)s"
                 params["user_id"] = a.user_id
+
+        if sort:
+            match sort:
+                case "-published_at":
+                    sql += " order by published_at desc"
+                case "published_at":
+                    sql += " order by published_at asc"
+                case _:
+                    raise HTTPException(status_code=400, detail="invalid sort param")
 
         print(sql)
         print(params)
