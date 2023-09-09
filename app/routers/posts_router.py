@@ -3,7 +3,7 @@ from fastapi import APIRouter, HTTPException
 from psycopg.rows import class_row
 from pydantic import BaseModel
 
-from app.dependencies import DBDep, JwtDep
+from app.dependencies import AdminDep, DBDep, JwtDep
 
 
 router = APIRouter(prefix="/posts")
@@ -31,6 +31,16 @@ class Post(BaseModel):
     updated_at: datetime
     user: User | None = None
     category: Category | None = None
+
+
+class UpdatePostReq(BaseModel):
+    user_id: int
+    category_id: int
+    title: str | None
+    content: str | None
+    status: str
+    published_at: datetime | None
+    updated_at: datetime
 
 
 @router.get("/")
@@ -137,4 +147,26 @@ def get_post(post_id: int, jwt_payload: JwtDep, conn: DBDep):
         if not record:
             raise HTTPException(status_code=404, detail="post not found")
 
+        return record
+
+
+@router.put("/{post_id}")
+def update_post(
+    post_id: int, update_post_req: UpdatePostReq, is_admin: AdminDep, conn: DBDep
+):
+    params = {
+        "post_id": post_id,
+        "user_id": update_post_req.user_id,
+        "category_id": update_post_req.category_id,
+        "title": update_post_req.title,
+        "content": update_post_req.content,
+        "status": update_post_req.status,
+        "published_at": update_post_req.published_at,
+        "updated_at": update_post_req.updated_at,
+    }
+    with conn.cursor(row_factory=class_row(Post)) as cur:
+        record = cur.execute(
+            "update posts set user_id = %(user_id)s, category_id = %(category_id)s, title = %(title)s, content = %(content)s, status = %(status)s, published_at = %(published_at)s, updated_at = %(updated_at)s where post_id = %(post_id)s returning *",
+            params,
+        ).fetchone()
         return record
