@@ -29,6 +29,8 @@ class Post(BaseModel):
     published_at: datetime | None
     created_at: datetime
     updated_at: datetime
+    user: User | None = None
+    category: Category | None = None
 
 
 @router.get("/")
@@ -95,4 +97,26 @@ def get_posts(
 
         print(sql)
         print(params)
-        return posts_cur.execute(sql, params).fetchall()
+        posts = posts_cur.execute(sql, params).fetchall()
+
+        category_ids = [post.category_id for post in posts]
+        categories = categories_cur.execute(
+            "select * from categories where category_id = any(%s)", [category_ids]
+        ).fetchall()
+
+        user_ids = [post.user_id for post in posts]
+        users = users_cur.execute(
+            "select * from users where user_id = any(%s)", [user_ids]
+        ).fetchall()
+
+        for post in posts:
+            post.category = next(
+                (
+                    category
+                    for category in categories
+                    if category.category_id == post.category_id
+                )
+            )
+            post.user = next((user for user in users if user.user_id == post.user_id))
+
+        return posts
