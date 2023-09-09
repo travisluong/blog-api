@@ -170,3 +170,9 @@ def update_post(
             params,
         ).fetchone()
         return record
+
+
+@router.delete("/{post_id}")
+def delete_post(post_id: int, conn: DBDep, is_admin: AdminDep):
+    conn.execute("delete from posts where post_id = %s", [post_id])
+    return {"message": "post deleted"}
