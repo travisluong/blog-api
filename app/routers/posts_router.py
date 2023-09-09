@@ -38,6 +38,7 @@ def get_posts(
     category: str | None = None,
     author: str | None = None,
     sort: str | None = None,
+    page: int = 0,
 ):
     with (
         conn.cursor(row_factory=class_row(Category)) as categories_cur,
@@ -81,6 +82,16 @@ def get_posts(
                     sql += " order by published_at asc"
                 case _:
                     raise HTTPException(status_code=400, detail="invalid sort param")
+
+        limit = 10
+        offset = 0
+
+        if page:
+            offset = page * limit
+
+        sql += " limit %(limit)s offset %(offset)s"
+        params["limit"] = limit
+        params["offset"] = offset
 
         print(sql)
         print(params)
