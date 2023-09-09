@@ -3,7 +3,7 @@ from fastapi import APIRouter
 from psycopg.rows import class_row
 from pydantic import BaseModel
 
-from app.dependencies import DBDep
+from app.dependencies import DBDep, JwtDep
 
 
 router = APIRouter(prefix="/posts")
@@ -22,6 +22,12 @@ class Post(BaseModel):
 
 
 @router.get("/")
-def get_posts(conn: DBDep):
+def get_posts(conn: DBDep, jwt_payload: JwtDep):
     with conn.cursor(row_factory=class_row(Post)) as posts_cur:
-        return posts_cur.execute("select * from posts").fetchall()
+        if not jwt_payload:
+            sql = "select * from posts where status = 'public'"
+        elif jwt_payload["is_admin"]:
+            sql = "select * from posts"
+        elif not jwt_payload["is_admin"]:
+            sql = "select * from posts where status != 'draft'"
+        return posts_cur.execute(sql).fetchall()
