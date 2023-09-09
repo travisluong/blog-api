@@ -4,11 +4,20 @@ from pydantic import BaseModel
 from psycopg.rows import class_row
 
 from app.dependencies import DBDep, JwtDep
-from app.routers.auth_router import UserDB
 from app.routers.categories_router import Category
 
 
 router = APIRouter(prefix="/posts")
+
+
+class User(BaseModel):
+    user_id: int
+    username: str
+
+
+class Category(BaseModel):
+    category_id: int
+    name: str
 
 
 class Post(BaseModel):
@@ -21,6 +30,8 @@ class Post(BaseModel):
     published_at: datetime | None
     created_at: datetime
     updated_at: datetime
+    user: User | None = None
+    category: Category | None = None
 
 
 @router.get("/")
@@ -34,7 +45,7 @@ def get_posts(
 ):
     with (
         conn.cursor(row_factory=class_row(Category)) as categories_cur,
-        conn.cursor(row_factory=class_row(UserDB)) as users_cur,
+        conn.cursor(row_factory=class_row(User)) as users_cur,
         conn.cursor(row_factory=class_row(Post)) as posts_cur,
     ):
         if not jwt_payload:
@@ -88,4 +99,25 @@ def get_posts(
         print(sql)
         print(params)
 
-        return posts_cur.execute(sql, params).fetchall()
+        posts = posts_cur.execute(sql, params).fetchall()
+        category_ids = [post.category_id for post in posts]
+        categories = categories_cur.execute(
+            "select * from categories where category_id = any(%s)", [category_ids]
+        ).fetchall()
+
+        user_ids = [post.user_id for post in posts]
+        users = users_cur.execute(
+            "select * from users where user_id = any(%s)", [user_ids]
+        ).fetchall()
+
+        for post in posts:
+            post.category = next(
+                (
+                    category
+                    for category in categories
+                    if category.category_id == post.category_id
+                )
+            )
+            post.user = next((user for user in users if user.user_id == post.user_id))
+
+        return posts
