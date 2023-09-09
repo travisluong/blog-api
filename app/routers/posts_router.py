@@ -9,6 +9,11 @@ from app.dependencies import DBDep, JwtDep
 router = APIRouter(prefix="/posts")
 
 
+class User(BaseModel):
+    user_id: int
+    username: str
+
+
 class Category(BaseModel):
     category_id: int
     name: str
@@ -27,10 +32,16 @@ class Post(BaseModel):
 
 
 @router.get("/")
-def get_posts(conn: DBDep, jwt_payload: JwtDep, category: str | None = None):
+def get_posts(
+    conn: DBDep,
+    jwt_payload: JwtDep,
+    category: str | None = None,
+    author: str | None = None,
+):
     with (
         conn.cursor(row_factory=class_row(Category)) as categories_cur,
         conn.cursor(row_factory=class_row(Post)) as posts_cur,
+        conn.cursor(row_factory=class_row(User)) as users_cur,
     ):
         if not jwt_payload:
             sql = "select * from posts where status = 'public'"
@@ -50,6 +61,16 @@ def get_posts(conn: DBDep, jwt_payload: JwtDep, category: str | None = None):
             else:
                 sql += " and category_id = %(category_id)s"
                 params["category_id"] = c.category_id
+
+        if author:
+            a = users_cur.execute(
+                "select * from users where username = %s", [author]
+            ).fetchone()
+            if not a:
+                raise HTTPException(status_code=404, detail="author not found")
+            else:
+                sql += " and user_id = %(user_id)s"
+                params["user_id"] = a.user_id
 
         print(sql)
         print(params)
