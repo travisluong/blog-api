@@ -20,7 +20,7 @@ app.include_router(posts_router.router)
 
 @app.get("/")
 def read_root():
-    return {"Hello": "World v1.1"}
+    return {"Hello": "World v1.2"}
 
 
 @app.get("/items/{item_id}")
