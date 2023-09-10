@@ -1,8 +1,8 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter
 from pydantic import BaseModel
 from psycopg.rows import class_row
 
-from app.dependencies import AuthDep, DBDep, get_current_user_id
+from app.dependencies import AuthDep, DBDep
 
 router = APIRouter(prefix="/users")
 
