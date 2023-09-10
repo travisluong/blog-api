@@ -1,0 +1,8 @@
+version: 1.0
+runtime: python3.10
+build:
+  commands:
+    build:
+      - pip install -r requirements.txt
+run:
+  command: uvicorn app.main:app
