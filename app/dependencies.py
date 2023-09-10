@@ -33,6 +33,7 @@ def is_admin(jwt: Annotated[str | None, Cookie()] = None):
         payload = josejwt.decode(jwt, settings.jwt_secret, algorithms=["HS256"])
         if not payload.get("is_admin"):
             raise HTTPException(status_code=403, detail="unauthorized")
+        return payload.get("sub")
     except JWTError as e:
         print(e)
         raise HTTPException(status_code=401, detail="invalid credentials")

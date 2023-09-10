@@ -1,4 +1,5 @@
 from datetime import datetime
+from enum import Enum
 from fastapi import APIRouter, HTTPException
 from psycopg.rows import class_row
 from pydantic import BaseModel
@@ -7,6 +8,12 @@ from app.dependencies import AdminDep, DBDep, JwtDep
 
 
 router = APIRouter(prefix="/posts")
+
+
+class StatusEnum(str, Enum):
+    draft = "draft"
+    private = "private"
+    public = "public"
 
 
 class User(BaseModel):
@@ -25,7 +32,7 @@ class Post(BaseModel):
     category_id: int
     title: str | None
     content: str | None
-    status: str
+    status: StatusEnum
     published_at: datetime | None
     created_at: datetime
     updated_at: datetime
@@ -38,9 +45,39 @@ class UpdatePostReq(BaseModel):
     category_id: int
     title: str | None
     content: str | None
-    status: str
+    status: StatusEnum
     published_at: datetime | None
     updated_at: datetime
+
+
+class CreatePostReq(BaseModel):
+    category_id: int
+    title: str | None
+    content: str | None
+    status: StatusEnum
+    published_at: datetime | None = None
+
+
+@router.post("/")
+def create_post(create_post_req: CreatePostReq, admin_id: AdminDep, conn: DBDep):
+    with conn.cursor(row_factory=class_row(Post)) as cur:
+        params = {
+            "user_id": admin_id,
+            "category_id": create_post_req.category_id,
+            "title": create_post_req.title,
+            "content": create_post_req.content,
+            "status": create_post_req.status,
+            "published_at": create_post_req.published_at,
+            "updated_at": datetime.now(),
+        }
+        record = cur.execute(
+            """insert into posts 
+                (user_id, category_id, title, content, status, published_at, updated_at) values 
+                (%(user_id)s,%(category_id)s,%(title)s,%(content)s,%(status)s,%(published_at)s,%(updated_at)s)
+                returning *""",
+            params,
+        ).fetchone()
+        return record
 
 
 @router.get("/")
@@ -152,7 +189,7 @@ def get_post(post_id: int, jwt_payload: JwtDep, conn: DBDep):
 
 @router.put("/{post_id}")
 def update_post(
-    post_id: int, update_post_req: UpdatePostReq, is_admin: AdminDep, conn: DBDep
+    post_id: int, update_post_req: UpdatePostReq, admin_id: AdminDep, conn: DBDep
 ):
     params = {
         "post_id": post_id,
@@ -166,13 +203,22 @@ def update_post(
     }
     with conn.cursor(row_factory=class_row(Post)) as cur:
         record = cur.execute(
-            "update posts set user_id = %(user_id)s, category_id = %(category_id)s, title = %(title)s, content = %(content)s, status = %(status)s, published_at = %(published_at)s, updated_at = %(updated_at)s where post_id = %(post_id)s returning *",
+            """update posts set 
+            user_id = %(user_id)s, 
+            category_id = %(category_id)s, 
+            title = %(title)s, 
+            content = %(content)s, 
+            status = %(status)s, 
+            published_at = %(published_at)s, 
+            updated_at = %(updated_at)s 
+            where post_id = %(post_id)s 
+            returning *""",
             params,
         ).fetchone()
         return record
 
 
 @router.delete("/{post_id}")
-def delete_post(post_id: int, conn: DBDep, is_admin: AdminDep):
+def delete_post(post_id: int, conn: DBDep, admin_id: AdminDep):
     conn.execute("delete from posts where post_id = %s", [post_id])
     return {"message": "post deleted"}
