@@ -95,11 +95,11 @@ def get_posts(
         conn.cursor(row_factory=class_row(User)) as users_cur,
     ):
         if not jwt_payload:
-            sql = "select * from posts where status = 'public'"
+            sql = "select p.*, u.username from posts p join users u on p.user_id = u.user_id where status = 'public'"
         elif jwt_payload["is_admin"]:
-            sql = "select * from posts where 1 = 1"
+            sql = "select p.*, u.username from posts p join users u on p.user_id = u.user_id where 1 = 1"
         elif not jwt_payload["is_admin"]:
-            sql = "select * from posts where status != 'draft'"
+            sql = "select p.*, u.username from posts p join users u on p.user_id = u.user_id where status != 'draft'"
 
         params = {}
 
@@ -129,6 +129,10 @@ def get_posts(
                     sql += " order by published_at desc"
                 case "published_at":
                     sql += " order by published_at asc"
+                case "-author":
+                    sql += " order by username desc"
+                case "author":
+                    sql += " order by username asc"
                 case _:
                     raise HTTPException(status_code=400, detail="invalid sort param")
 
