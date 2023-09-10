@@ -3,7 +3,7 @@ from fastapi import APIRouter, HTTPException
 from psycopg.rows import class_row
 from pydantic import BaseModel
 
-from app.dependencies import AdminDep, AuthDep, DBDep
+from app.dependencies import AdminDep, DBDep
 
 
 router = APIRouter(prefix="/categories")
@@ -34,7 +34,7 @@ def get_categories(conn: DBDep):
 
 
 @router.post("/")
-def create_category(conn: DBDep, is_admin: AdminDep, category_req: CategoryReq):
+def create_category(conn: DBDep, admin_id: AdminDep, category_req: CategoryReq):
     with conn.cursor(row_factory=class_row(CategoryRes)) as cur:
         is_exists = cur.execute(
             "select * from categories where name = %s", [category_req.name]
@@ -49,7 +49,7 @@ def create_category(conn: DBDep, is_admin: AdminDep, category_req: CategoryReq):
 
 @router.put("/{category_id}")
 def update_category(
-    conn: DBDep, is_admin: AdminDep, category_id: int, category_req: CategoryReq
+    conn: DBDep, admin_id: AdminDep, category_id: int, category_req: CategoryReq
 ):
     with conn.cursor(row_factory=class_row(CategoryRes)) as cur:
         record = cur.execute(
@@ -60,7 +60,7 @@ def update_category(
 
 
 @router.delete("/{category_id}")
-def delete_category(conn: DBDep, is_admin: AdminDep, category_id: int):
+def delete_category(conn: DBDep, admin_id: AdminDep, category_id: int):
     with conn.cursor() as cur:
         record = cur.execute(
             "delete from categories where category_id = %s returning name",
